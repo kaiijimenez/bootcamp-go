@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
-	"sync"
 	"time"
 )
 
-var wg sync.WaitGroup
+var numGoroutines = 5
 
 func sending(sent chan<- string, msg string) {
 	fmt.Println("Sending message...")
@@ -21,9 +20,11 @@ func receiving(receive <-chan string) {
 }
 
 func main() {
-	message := make(chan string)
-	wg.Add(1)
-	go sending(message, "Message to be printed")
-	time.Sleep(time.Second * 5)
-	receiving(message)
+	message := make(chan string, numGoroutines)
+	defer close(message)
+	for i := 0; i < numGoroutines; i++ {
+		go sending(message, "Message to be printed")
+		time.Sleep(time.Second * 5)
+		receiving(message)
+	}
 }
