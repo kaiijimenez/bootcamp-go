@@ -11,3 +11,7 @@ type errorString struct {
 func (e *errorString) Error() string {
 	return e.str
 }
+
+func New(text string) error {
+	return &errorString{text}
+}
