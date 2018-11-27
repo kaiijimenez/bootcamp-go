@@ -4,21 +4,31 @@ import (
 	"fmt"
 )
 
-func Sqrt(x float64) float64 {
-	z := x/2
-	i := false
-	for i == false{
-		y := z
-		fmt.Println("1.valor de y: ", y)
-		z -= (z*z - x) / (2*z)
-		fmt.Println("2.valor de z: ", z)
-		if y == z{
-			i = true
-		}	
+const diff = 1e-6
+
+type ErrNegativaSqrt float64
+
+func (e ErrNegativaSqrt) Error() string {
+	return fmt.Sprintf("cannot Sqrt negative number: %v", float64(e))
+}
+
+func Sqrt(x float64) (float64, error) {
+	if x < 0 {
+		return 0, ErrNegativaSqrt(x)
 	}
-	return z
+	z := x
+	oldz := 0.0
+	for {
+		if v := z - oldz; -diff < v && v < diff {
+			return z, nil
+		} else {
+			oldz = z
+			z -= (z*z - x) / (2 * z)
+		}
+	}
 }
 
 func main() {
-	fmt.Println(Sqrt(9))
+	fmt.Println(Sqrt(2))
+	fmt.Println(Sqrt(-2))
 }
