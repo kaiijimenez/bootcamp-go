@@ -1,5 +1,13 @@
 package main
 
+/*
+	Example that has three functions
+	One function that sends a channel with a message
+	Second function that receives the message and print it
+	Third function that provides the message and ever 5 sec it sends it to the channel
+	Using buffering channels to run the goroutines
+
+*/
 import (
 	"fmt"
 	"time"
