@@ -5,39 +5,54 @@ import (
 	"fmt"
 )
 
-type user struct{}
+type InMemory interface {
+	Create() (string, error)
+}
 
-func Create(m map[int]user, id int, u user) (string, error) {
-	_, ok := m[id]
+//id para los keys en el map
+var id = 0
+
+//User tabla, valores: Name string, Email string
+type User struct {
+	Name  string
+	Email string
+}
+
+//db key, values
+var db = make(map[int]User)
+
+func (u User) Create() (string, error) {
+	id++
+	_, ok := db[id]
 	if !ok {
-		m[id] = u
-		return fmt.Sprintf("New input\nid: %x, values: %x\n New:%x", id, u, m), nil
+		db[id] = u
+		return fmt.Sprintf("New input\nid: %v, values: %v\nNew: %v", id, u, db), nil
 	}
 	return "", errors.New("duplicated id, try again")
 }
 
-func Retrieve(m map[int]user, id int) (user, error) {
-	elem, ok := m[id]
+func Retrieve(id int) (User, error) {
+	elem, ok := db[id]
 	if !ok {
-		return user{}, errors.New("id not valid, try again")
+		return User{}, errors.New("id not valid, try again")
 	}
 	return elem, nil
 }
 
-func Update(m map[int]user, id int, u user) (string, error) {
-	elem, ok := m[id]
+func Update(id int, to User) (string, error) {
+	elem, ok := db[id]
 	if !ok {
 		return "", errors.New("id not found, try again")
 	}
-	m[id] = u
-	return fmt.Sprintf("Updated!\nOld: %x, New: %x", elem, u), nil
+	db[id] = to
+	return fmt.Sprintf("Updated!\nOld: %v, New: %v\nNewMap: %v", elem, to, db), nil
 }
 
-func Del(m map[int]user, id int) (string, error) {
-	elem, ok := m[id]
+func Del(id int) (string, error) {
+	elem, ok := db[id]
 	if !ok {
 		return "", errors.New("id not found, try again")
 	}
-	delete(m, id)
-	return fmt.Sprintf("Deleted: %x, NewMap: %x", elem, m), nil
+	delete(db, id)
+	return fmt.Sprintf("Deleted: %v, NewMap: %v", elem, db), nil
 }
