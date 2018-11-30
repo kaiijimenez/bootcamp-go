@@ -5,39 +5,36 @@ import (
 	"fmt"
 )
 
-var interfaz crud.InMemory
+type users []crud.User
+
+var imp crud.InMemory
 
 func main() {
-	u1 := crud.User{
-		Name:  "admin",
-		Email: "admin@example.com",
+	u := crud.User{Name: "user2", Email: "user2@example.com"}
+	users := []crud.User{
+		crud.User{Name: "admin", Email: "admin@example.com"},
+		crud.User{Name: "user1", Email: "user1@example.com"},
 	}
-	u2 := crud.User{
-		Name:  "user1",
-		Email: "user1@example.com",
+	for i := range users {
+		//imp := &users[i]
+		create, err := users[i].Create()
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(create)
 	}
-	interfaz = u1
-	create, err := interfaz.Create()
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(create)
-	create1, err := u2.Create()
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(create1)
+	fmt.Println("%v, %T", imp, imp)
 	ret, err := crud.Retrieve(1)
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(ret)
-	upd, err := crud.Update(1, u2)
+	fmt.Println("Ret: ", ret)
+	upd, err := u.Update(1)
 	if err != nil {
 		fmt.Println(err)
 	}
 	fmt.Println(upd)
-	dl, err := crud.Del(1)
+	dl, err := imp.Del(2)
 	if err != nil {
 		fmt.Println(err)
 	}
