@@ -4,88 +4,125 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 )
 
-type inMemory interface {
+type InMemory interface {
 	Create(u *User) (string, error)
-	//retrieve(id int) (User, error)
-	//update(u *User, id int) (dataBase, error)
-	//del(id int) (dataBase, error)
+	Retrieve(id int) (string, error)
+	Update(u *User, id int) (string, error)
+	Del(id int) (string, error)
 }
 
-type dataBase struct {
-	db map[int]*User
+type Database struct {
+	DB map[int]*User
 }
 
 type User struct {
 	Name, Email string
 }
 
-type query struct {
-	inm inMemory
+type Query struct {
+	Inm InMemory
 }
 
 var id = 0
 
-func (db dataBase) Create(u *User) (string, error) {
+func (db Database) Create(u *User) (string, error) {
 	id++
-	db.db[id] = u
-	return fmt.Sprintf("Created: %v", u), nil
+	db.DB[id] = u
+	return fmt.Sprintf("Created: %v\nIn DB: %v", u, db.Showdb()), nil
 }
 
-func (db dataBase) retrieve(id int) (User, error) {
-	elem, ok := db.db[id]
+func (db Database) Retrieve(id int) (string, error) {
+	elem, ok := db.DB[id]
 	if !ok {
-		return User{}, errors.New("Tried to get a key which doesn't exist")
+		return "", errors.New("Tried to get a key which doesn't exist")
 	}
-	return *elem, nil
+	return fmt.Sprintf("Value from map: %v", elem), nil
 }
 
-func (db dataBase) update(u *User, id int) (dataBase, error) {
-	_, ok := db.db[id]
+func (db Database) Update(u *User, id int) (string, error) {
+	elem, ok := db.DB[id]
 	if !ok {
-		return dataBase{}, errors.New("Tried to get a key which doesn't exist")
+		return "", errors.New("Tried to get a key which doesn't exist")
 	}
-	db.db[id] = u
-	return db, nil
+	db.DB[id] = u
+	return fmt.Sprintf("Updated, old:%v, new:%v\nNew map: %v", elem, u, db.Showdb()), nil
 }
 
-func (db dataBase) del(id int) (dataBase, error) {
-	_, ok := db.db[id]
+func (db Database) Del(id int) (string, error) {
+	elem, ok := db.DB[id]
 	if !ok {
-		return dataBase{}, errors.New("Tried to get a key which doesn't exist")
+		return "", errors.New("Tried to get a key which doesn't exist")
 	}
-	delete(db.db, id)
-	return db, nil
+	delete(db.DB, id)
+	return fmt.Sprintf("Deleted: %v\nIn DB: %v", elem, db.Showdb()), nil
 }
 
-func (q *query) Query(s string) {
+// GetQuery get the query from user and apply the proper functionality
+func (q *Query) GetQuery(s string) (string, error) {
 	str := strings.Fields(s)
-	if str[0] == "Create" {
+	var (
+		msg string
+		err error
+	)
+	switch str[0] {
+	case "Create":
 		u := User{str[1], str[2]}
-		msg, err := q.inm.Create(&u)
-		show(msg, err, "Create")
+		msg, err = q.Inm.Create(&u)
+	case "Update":
+		u := User{str[3], str[4]}
+		id, _ := strconv.Atoi(str[2])
+		msg, err = q.Inm.Update(&u, id)
+	case "Get":
+		id, _ := strconv.Atoi(str[2])
+		msg, err = q.Inm.Retrieve(id)
+	case "Delete":
+		id, _ := strconv.Atoi(str[2])
+		msg, err = q.Inm.Del(id)
+	default:
+		msg = "Error"
+		err = nil
 	}
+	return msg, err
 }
 
-func (db dataBase) showdb(s string) {
-	fmt.Printf("DB\n%v\n", s)
-	for k, v := range db.db {
-		fmt.Printf("Id: %v, User: %v, Email: %v\n", k, v.Name, v.Email)
+func (db Database) Showdb() map[int]User {
+	data := make(map[int]User)
+	if db.DB == nil {
+		return data
 	}
+	for k, v := range db.DB {
+		data[k] = *v
+	}
+	return data
 }
 
-func show(i interface{}, e error, s string) {
+func show(s string, e error) {
 	if e != nil {
 		log.Fatal(e)
+	} else {
+		fmt.Println(s)
 	}
-	switch t := i.(type) {
-	case User:
-		fmt.Println("Retrieved:", i)
-	case dataBase:
-		t.showdb(s)
-	default:
-		log.Fatal("Error")
+}
+
+func Run() {
+	q := Query{
+		Inm: Database{
+			DB: make(map[int]*User),
+		},
 	}
+	cre, err := q.GetQuery("Create admin admin@example.com")
+	show(cre, err)
+	cre1, err := q.GetQuery("Create user user@example.com")
+	show(cre1, err)
+	upd, err := q.GetQuery("Update id 1 admin1 admin1@example.com")
+	show(upd, err)
+	get, err := q.GetQuery("Get id 1")
+	show(get, err)
+	de, err := q.GetQuery("Delete id 1")
+	show(de, err)
+	//RUN THE QUERIES FOR THE INMEMORY OF THE DB
 }
