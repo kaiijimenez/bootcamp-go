@@ -1,62 +1,91 @@
 package crud
 
 import (
-	"bootcamp-go/semana2/db/errors"
+	"errors"
 	"fmt"
+	"log"
+	"strings"
 )
 
-type InMemory interface {
-	Create() (string, error)
-	Retrieve(id int) (User, error)
-	Update(id int) (string, error)
-	Del(id int) (string, error)
+type inMemory interface {
+	Create(u *User) (string, error)
+	//retrieve(id int) (User, error)
+	//update(u *User, id int) (dataBase, error)
+	//del(id int) (dataBase, error)
 }
 
-//id para los keys en el map
+type dataBase struct {
+	db map[int]*User
+}
+
+type User struct {
+	Name, Email string
+}
+
+type query struct {
+	inm inMemory
+}
+
 var id = 0
 
-//User tabla, valores: Name string, Email string
-type User struct {
-	Name  string
-	Email string
-}
-
-//db key, values
-var db = make(map[int]*User)
-
-func (u *User) Create() (string, error) {
+func (db dataBase) Create(u *User) (string, error) {
 	id++
-	_, ok := db[id]
-	if !ok {
-		db[id] = u
-		return fmt.Sprintf("New input\nid: %v, values: %v\nNew: %v\n", id, u, db), nil
-	}
-	return "", errors.New("duplicated id, try again\n")
+	db.db[id] = u
+	return fmt.Sprintf("Created: %v", u), nil
 }
 
-func Retrieve(id int) (User, error) {
-	elem, ok := db[id]
-	fmt.Println(&elem, *elem)
+func (db dataBase) retrieve(id int) (User, error) {
+	elem, ok := db.db[id]
 	if !ok {
-		return User{}, errors.New("id not valid, try again\n")
+		return User{}, errors.New("Tried to get a key which doesn't exist")
 	}
 	return *elem, nil
 }
 
-func (to *User) Update(id int) (string, error) {
-	elem, ok := db[id]
+func (db dataBase) update(u *User, id int) (dataBase, error) {
+	_, ok := db.db[id]
 	if !ok {
-		return "", errors.New("id not found, try again\n")
+		return dataBase{}, errors.New("Tried to get a key which doesn't exist")
 	}
-	db[id] = to
-	return fmt.Sprintf("Updated!\nOld: %v, New: %v\nNewMap: %v\n", elem, to, db), nil
+	db.db[id] = u
+	return db, nil
 }
 
-func Del(id int) (string, error) {
-	elem, ok := db[id]
+func (db dataBase) del(id int) (dataBase, error) {
+	_, ok := db.db[id]
 	if !ok {
-		return "", errors.New("id not found, try again\n")
+		return dataBase{}, errors.New("Tried to get a key which doesn't exist")
 	}
-	delete(db, id)
-	return fmt.Sprintf("Deleted: %v, NewMap: %v\n", elem, db), nil
+	delete(db.db, id)
+	return db, nil
+}
+
+func (q *query) Query(s string) {
+	str := strings.Fields(s)
+	if str[0] == "Create" {
+		u := User{str[1], str[2]}
+		msg, err := q.inm.Create(&u)
+		show(msg, err, "Create")
+	}
+}
+
+func (db dataBase) showdb(s string) {
+	fmt.Printf("DB\n%v\n", s)
+	for k, v := range db.db {
+		fmt.Printf("Id: %v, User: %v, Email: %v\n", k, v.Name, v.Email)
+	}
+}
+
+func show(i interface{}, e error, s string) {
+	if e != nil {
+		log.Fatal(e)
+	}
+	switch t := i.(type) {
+	case User:
+		fmt.Println("Retrieved:", i)
+	case dataBase:
+		t.showdb(s)
+	default:
+		log.Fatal("Error")
+	}
 }
