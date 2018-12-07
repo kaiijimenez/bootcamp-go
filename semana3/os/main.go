@@ -2,22 +2,26 @@ package main
 
 import (
 	"bootcamp-go/semana3/os/examples"
-	"log"
 )
 
 //create(int, string) map[int]string
 var (
-	f = "file.txt"
-	b []byte
+	w = "write.json"
+	r = "read.json"
 )
 
 func main() {
-	mp := examples.Data{
-		M: make(map[int]string),
+	//write a json file
+	mp := examples.JsonStruct{
+		JStruct: make(map[int]string),
 	}
-	mp.Add(3, "three", f)
-	e := examples.Load(f)
-	if e != nil {
-		log.Fatal(e)
-	}
+	mp.Add(1, "one", w)
+	mp.Add(2, "two", w)
+	mp.Add(3, "three", w)
+	mp.Add(4, "four", w)
+	mp.Add(5, "five", w)
+	//mp.Add(1, "other-one", w)
+
+	//reading a json file
+	examples.GetData(r)
 }
