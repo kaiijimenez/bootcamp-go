@@ -1,8 +1,6 @@
 package main
 
-import (
-	"bootcamp-go/semana3/os/examples"
-)
+import "github.com/kaiijimenez/bootcamp-go/semana3/os/examples"
 
 //create(int, string) map[int]string
 var (
