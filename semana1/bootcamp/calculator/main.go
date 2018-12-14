@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/karina.jimenez/bootcamp/calculator/calc"
+	"github.com/kaiijimenez/bootcamp-go/semana1/bootcamp/calculator/calc"
 )
 
 func main() {
