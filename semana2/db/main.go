@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bootcamp-go/semana2/db/crud"
+	"github.com/kaiijimenez/bootcamp-go/semana2/db/crud"
 )
 
 func main() {

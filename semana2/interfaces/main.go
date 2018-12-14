@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+//Example of use interfaces and channels
+
 type stringer interface {
 	String() string
 }
