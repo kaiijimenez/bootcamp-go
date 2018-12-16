@@ -1,0 +1,32 @@
+version: "3.7"
+
+services:
+  shopping_cart:
+    image: shopping_cart
+    container_name: shopping_cart
+    restart: always
+    ports:
+      - 8000:8000
+    volumes:
+      - ./:/go/src/github.com/kaiijimenez/bootcamp-go/restAPI
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=shoppingcartdb
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+      - MYSQL_PORT=3306
+      - MYSQL_HOST=shoppingdb
+    command: go run main.go
+    networks:
+    - default
+  shoppingdb:
+    image: mysql:5.7
+    container_name: shoppingdb
+    restart: always
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=shoppingcartdb
+    networks:
+    - default

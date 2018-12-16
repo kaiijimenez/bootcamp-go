@@ -1,0 +1,10 @@
+FROM golang:1.10.4
+ENV APP_DIR $GOPATH/src/github.com/kaiijimenez/bootcamp-go/restAPI
+ADD . /go/src/github.com/kaiijimenez/bootcamp-go/restAPI
+
+WORKDIR $APP_DIR
+EXPOSE 8000
+RUN go get -u github.com/gorilla/mux && go get -u github.com/go-sql-driver/mysql
+
+CMD ["go", "run", "main.go"]
+
