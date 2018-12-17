@@ -7,3 +7,13 @@ type Items struct {
 	Price    string  `json:"price, omitempty"`
 	Quantity *string `json:"qt, omitempty"`
 }
+
+type Cart struct {
+	Keys string
+	Prod Items
+}
+
+type Error struct {
+	Code int
+	Msg  string
+}

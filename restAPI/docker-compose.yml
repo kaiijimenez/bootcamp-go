@@ -17,6 +17,10 @@ services:
       - MYSQL_PORT=3306
       - MYSQL_HOST=shoppingdb
     command: go run main.go
+    links:
+    - shoppingdb
+    depends_on: 
+    - shoppingdb
     networks:
     - default
   shoppingdb:

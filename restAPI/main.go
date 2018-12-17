@@ -6,7 +6,6 @@ package main
 //MAKE IT MORE FUNCTIONAL
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -16,28 +15,8 @@ import (
 	"github.com/kaiijimenez/bootcamp-go/restAPI/handlers"
 )
 
-var db *sql.DB
-
-const (
-	dbName = "shopping-cart"
-	dbPass = "12345"
-	dbHost = "localhost"
-	dbPort = "33066"
-)
-
-func init() {
-	dbSource := fmt.Sprintf("root:%s@tcp(%s:%s)/%s?charset=utf8", dbPass, dbHost, dbPort, dbName)
-
-	var err error
-	db, err = sql.Open("mysql", dbSource)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
 func main() {
-	fmt.Println("Comiendo tacos.com")
+	fmt.Println("Running")
 	router := Routes()
 	log.Fatal(http.ListenAndServe(":8000", router))
 

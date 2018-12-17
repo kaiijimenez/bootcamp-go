@@ -8,9 +8,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kaiijimenez/bootcamp-go/restAPI/models"
-
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
+	"github.com/kaiijimenez/bootcamp-go/restAPI/models"
+	"github.com/kaiijimenez/bootcamp-go/restAPI/utils"
 )
 
 var (
@@ -19,115 +20,123 @@ var (
 	art   = "http://challenge.getsandbox.com/articles"
 )
 
-//CreateCart with the values from third party uri
 func CreateCart(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	//http.Client with a sensible timeout
 	var client = &http.Client{
 		Timeout: time.Second * 10,
 	}
-	var c []map[string]string
-	var cart models.Items
+
+	var c []models.Cart
+	var d []map[string]string
+
+	//Get items from endpoint
 	endp, _ := client.Get(art)
 	body, _ := ioutil.ReadAll(endp.Body)
 	defer endp.Body.Close()
-	if js := json.Unmarshal(body, &c); js != nil {
-		log.Fatal(js)
-	}
+	js := json.Unmarshal(body, &c)
+	e := json.Unmarshal(body, &d)
+	utils.LogsError("Error trying to unmarshall items: ", js)
+	utils.LogsError("Error trying to unmarshall items: ", e)
+	fmt.Println(c)
+	fmt.Println(d)
+
+	//Inserting items into DB
 	for _, v := range c {
-		cart.ID = v["id"]
-		cart.Title = v["title"]
-		cart.Price = v["price"]
-		cart.Quantity = &qt
-		items = append(items, cart)
+		v.Prod.Quantity = &qt
+		res := utils.PrepareExecQuery("INSERT INTO shoppingcartdb.items(id, title, price, quantity) VALUES (?,?,?,?);", "Error trying to insert into DB", v)
+		log.Println("Successfully inserted: ", res)
 	}
-
-	w.WriteHeader(http.StatusCreated) //Created
-	fmt.Println(items)
-	json.NewEncoder(w).Encode(&items)
+	i := utils.SelectAll()
+	if i == nil {
+		log.Fatal("empty db")
+		utils.RespondWithError(w, http.StatusNotImplemented, "Empty DB")
+	}
+	utils.RespondWithJson(w, http.StatusCreated, i)
 }
 
+//Verify if the table is empty so it should send a diff response
 func AllItems(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK) //Good Response
-	json.NewEncoder(w).Encode(&items)
+	i := utils.SelectAll()
+	if i == nil {
+		log.Fatal("empty db")
+		utils.RespondWithError(w, http.StatusNotImplemented, "Empty DB")
+	}
+	utils.RespondWithJson(w, http.StatusOK, i)
 }
 
-//CANNOT ADD MORE THAN ONE ITEM
 func AddItems(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	//Decoding client request
 	var item models.Items
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		log.Fatal(err)
 	}
-	for _, v := range items {
-		//In case the ID is already created
-		if item.ID == v.ID {
-			w.WriteHeader(http.StatusNotModified) //client has the response already
-			return
-		}
+
+	indb, _ := utils.CheckAvailability(item.ID)
+	//If there is no record in the db with same ID then it can be inserted
+	if !indb {
+		insert := utils.PrepareExecQuery("INSERT INTO shoppingcartdb.items (id, title, price, quantity) VALUE (?,?,?,?);", "Error trying to insert into DB")
+		//As we are adding in to the shopping cart then qt it should be initialize it with 1
+		res, err := insert.Exec(item.ID, item.Title, item.Price, &qt)
+		utils.LogsError("Error executing values in the insert query: ", err)
+		log.Println("Record inserted successfully", res)
+		utils.RespondWithJson(w, http.StatusCreated, item)
+		//it should end
 	}
-	//As we are adding in to the shopping cart then qt it should be initialize it with 1
-	w.WriteHeader(http.StatusCreated)
-	item.Quantity = &qt
-	items = append(items, item)
-	json.NewEncoder(w).Encode(item)
+	//If there is a record with same ID send error response
+	utils.RespondWithError(w, http.StatusNotModified, "Record already inserted in DB.")
 }
 
 func DeleteItem(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)["id"]
-	ver, index := CheckAvailability(params)
-	if ver {
-		items = append(items[:index], items[index+1:]...)
-		w.WriteHeader(http.StatusNoContent) //when deleting
-		json.NewEncoder(w).Encode(items)
-		return
-	}
-	w.WriteHeader(http.StatusNotFound) //in case does not exist
-	return
 
+	indb, item := utils.CheckAvailability(params)
+	//If the record is in the database then it can be delete
+	if indb {
+		del := utils.PrepareExecQuery("DELETE FROM shoppingcartdb.item WHERE id=?", "Error trying to delete from DB")
+		res, err := del.Exec(params)
+		utils.LogsError("Error trying to execute the delete query: ", err)
+		log.Println("Deleted successfully: ", res)
+		utils.RespondWithJson(w, http.StatusNoContent, item) //showing client which item is being deleted
+	}
+	utils.RespondWithError(w, http.StatusNotFound, "There is not item in DB with same ID")
 }
 
-//CHECK AS FOR NOW WORKING AS EXPECTED BUT I HAVE TO DELETE THE ITEM AND THEN ADD IT AGAIN IS THIS FUNCTIONAL?
 func UpdateQ(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)["id"]
-	var item models.Items
-	for key, value := range items {
-		if value.ID == params {
-			items = append(items[:key], items[key+1:]...)
-			if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
-				log.Fatal(err)
-			}
-			// it should update only the quantity of an EXISTING
-			value.Quantity = item.Quantity
-			items = append(items, value)
-			json.NewEncoder(w).Encode(items)
-			w.WriteHeader(http.StatusOK)
-			return
+
+	indb, _ := utils.CheckAvailability(params)
+	//If there is record in the DB
+	if indb {
+		//getting quantity request from client
+		var item models.Items
+		if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+			log.Fatal(err)
 		}
+		//Updating
+		upd := utils.PrepareExecQuery("UPDATE shoppingcartdb.item SET quantity = ? WHERE id = ?", "Error trying to update the quantity")
+		res, err := upd.Exec(item.Quantity, params)
+		utils.LogsError("Error trying to execute the update query: ", err)
+		log.Println("UPDATED successfully", res)
+		_, i := utils.CheckAvailability(params) //supposed that it should return me the record updated
+		utils.RespondWithJson(w, http.StatusOK, i)
+		return
 	}
-	w.WriteHeader(http.StatusNotFound)
-	return
+	utils.RespondWithError(w, http.StatusNotFound, "There is not item in DB with same ID")
 }
 
 func ClearCart(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if items != nil {
-		items = nil
-		w.WriteHeader(http.StatusNoContent)
-		json.NewEncoder(w).Encode(items)
-		return
+	//verify if items is emtpy to only send a Empty DB
+	items := utils.SelectAll()
+	if items == nil {
+		log.Fatal("empty db")
+		utils.RespondWithError(w, http.StatusNotImplemented, "Empty DB")
 	}
-	w.WriteHeader(http.StatusNotFound)
-
-}
-
-func CheckAvailability(id string) (bool, int) {
-	for k, v := range items {
-		if v.ID == id {
-			return true, k
-		}
+	for _, values := range items {
+		del := utils.PrepareExecQuery("DELETE FROM shoppingcartdb.item WHERE id=?", "Error trying to delete from DB")
+		res, err := del.Exec(values.ID)
+		utils.LogsError("Error trying to execute delete query (Clear method): ", err)
+		log.Println("Deleted successfully: ", res)
+		utils.RespondWithJson(w, http.StatusNoContent, values)
 	}
-	return false, 0
+
 }
