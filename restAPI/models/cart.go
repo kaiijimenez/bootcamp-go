@@ -14,6 +14,6 @@ type Cart struct {
 }
 
 type Error struct {
-	Code int
-	Msg  string
+	Code    string `json:"cod"`
+	Message string `json:"message"`
 }

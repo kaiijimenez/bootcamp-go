@@ -4,7 +4,6 @@ services:
   shopping_cart:
     image: shopping_cart
     container_name: shopping_cart
-    restart: always
     ports:
       - 8000:8000
     volumes:
@@ -26,7 +25,6 @@ services:
   shoppingdb:
     image: mysql:5.7
     container_name: shoppingdb
-    restart: always
     ports:
       - 3306:3306
     environment:

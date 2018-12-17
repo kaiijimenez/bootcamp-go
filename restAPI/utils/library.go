@@ -3,6 +3,7 @@ package utils
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -26,7 +27,7 @@ var CheckAvailability = func(id string) (bool, models.Items) {
 	var item models.Items
 
 	row := db.QueryRow("SELECT id FROM shoppingcartdb.items WHERE id=?;", id)
-	err := row.Scan(item.ID, item.Title, item.Price, item.Quantity)
+	err := row.Scan(&item.ID, &item.Title, &item.Price, &item.Quantity)
 	if err == sql.ErrNoRows {
 		//in case there is not an item with the same ID
 		return false, item
@@ -42,12 +43,11 @@ var RespondWithJson = func(w http.ResponseWriter, code int, items interface{}) {
 }
 
 var RespondWithError = func(w http.ResponseWriter, code int, msg string) {
-	var e models.Error
-	e.Code = code
-	e.Msg = msg
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(&items)
+	e := make(map[string]interface{})
+	e["code"] = code
+	e["message"] = msg
+	fmt.Println(e)
+	RespondWithJson(w, code, e)
 }
 
 var LogsError = func(msg string, e error) {
@@ -56,13 +56,32 @@ var LogsError = func(msg string, e error) {
 	}
 }
 
-var PrepareExecQuery = func(query string, msgerror string, values interface{}) sql.Result {
+var Insert = func(query string, values models.Items, msgerror string) sql.Result {
 	db := dbConn()
 	defer db.Close()
-	var item models.Items
 	q, err := db.Prepare(query)
 	LogsError(msgerror, err)
-	res, err := q.Exec(item.ID, item.Title, item.Price, item.Quantity)
+	res, err := q.Exec(values.ID, values.Title, values.Price, values.Quantity)
+	LogsError(msgerror, err)
+	return res
+}
+
+var Delete = func(query, id, msgerror string) sql.Result {
+	db := dbConn()
+	defer db.Close()
+	q, err := db.Prepare(query)
+	LogsError(msgerror, err)
+	res, err := q.Exec(id)
+	LogsError(msgerror, err)
+	return res
+}
+
+var Update = func(query, id, msgerror string, qt *string) sql.Result {
+	db := dbConn()
+	defer db.Close()
+	q, err := db.Prepare(query)
+	LogsError(msgerror, err)
+	res, err := q.Exec(qt, id)
 	LogsError(msgerror, err)
 	return res
 }
@@ -70,18 +89,15 @@ var PrepareExecQuery = func(query string, msgerror string, values interface{}) s
 var SelectAll = func() []models.Items {
 	db := dbConn()
 	defer db.Close()
-
-	var item models.Items
-
-	rows, err := db.Query("SELECT * FROM shoppingcartdb.items;")
+	rows, err := db.Query("SELECT *  FROM shoppingcartdb.items")
 	LogsError("Error trying to retrieve the data from db", err)
 	if rows == nil {
 		return nil
 	}
 	for rows.Next() {
-		rows.Scan(item.ID, item.Title, item.Price, item.Quantity)
+		var item models.Items
+		rows.Scan(&item.ID, &item.Title, &item.Price, &item.Quantity)
 		items = append(items, item)
 	}
-	defer rows.Close()
 	return items
 }
