@@ -2,7 +2,8 @@ package models
 
 //From 2 days before
 type FeatureCollection struct {
-	MetaD Metadata `json:"metadata, omitempty"`
+	MetaD    Metadata  `json:"metadata, omitempty"`
+	Features []Feature `json:"features, omitempty"`
 }
 
 //from ID
@@ -13,8 +14,7 @@ type SpecificID struct {
 }
 
 type Metadata struct {
-	Status   int       `json:"status, omitempty"`
-	Features []Feature `json:"features, omitempty"`
+	Status int `json:"status, omitempty"`
 }
 
 type Feature struct {
