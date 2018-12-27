@@ -1,9 +1,5 @@
 package main
 
-//TODO
-//6.ADD DEP INTO THE PROJECT
-//7.ADD TESTCASES
-//MAKE IT MORE FUNCTIONAL
 
 import (
 	"fmt"

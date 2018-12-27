@@ -41,9 +41,7 @@ func CreateCart(w http.ResponseWriter, r *http.Request) {
 		item.Title = v["title"]
 		item.Price = v["price"]
 		item.Quantity = &qt
-		res := utils.Insert("INSERT INTO shoppingcartdb.items(id, title, price, quantity) VALUES (?,?,?,?);", item, "Error trying to insert into DB")
-		//res := utils.PrepareExecQuery("INSERT INTO shoppingcartdb.items(id, title, price, quantity) VALUES (?,?,?,?);", "Error trying to insert into DB", v)
-		log.Println("Successfully inserted: ", res)
+		utils.Insert("INSERT INTO shoppingcartdb.items(id, title, price, quantity) VALUES (?,?,?,?);", item, "Error trying to insert into DB")
 	}
 	i := utils.SelectAll()
 	if i == nil {
@@ -116,9 +114,12 @@ func UpdateQ(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 		//Updating
-		res := utils.Update("UPDATE shoppingcartdb.items SET quantity = ? WHERE id = ?", params, "Error trying to update the quantity", item.Quantity)
-		log.Println("UPDATED successfully", res)
-		_, i := utils.CheckAvailability(params) //supposed that it should return me the record updated
+		utils.Update("UPDATE shoppingcartdb.items SET quantity = ? WHERE id = ?", params, "Error trying to update the quantity", item.Quantity)
+		exist, i := utils.CheckAvailability(params)
+		if !exist {
+			utils.RespondWithError(w, http.StatusNotFound, "Id doesnt exist in the DB")
+			return
+		}
 		utils.RespondWithJson(w, http.StatusOK, i)
 		return
 	}
@@ -134,10 +135,9 @@ func ClearCart(w http.ResponseWriter, r *http.Request) {
 		utils.RespondWithError(w, http.StatusNotImplemented, "Empty DB")
 		return
 	}
-	for _, values := range items {
-		res := utils.Delete("DELETE FROM shoppingcartdb.items WHERE id=?", values.ID, "Error trying to delete from DB")
-		log.Println("Deleted successfully: ", res)
-		utils.RespondWithJson(w, http.StatusNoContent, values)
+	if err := utils.CleanDB(); err == nil {
+		utils.RespondWithJson(w, http.StatusNoContent, nil)
 		return
 	}
+	utils.RespondWithError(w, http.StatusNotImplemented, "Empty already")
 }

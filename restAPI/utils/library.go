@@ -10,8 +10,8 @@ import (
 	"github.com/kaiijimenez/bootcamp-go/restAPI/models"
 )
 
-func dbConn() (db *sql.DB) {
-	db, err := sql.Open("mysql", "root:root@tcp/shoppingcartdb?charset=utf8")
+func DbConn() (db *sql.DB) {
+	db, err := sql.Open("mysql", "root:root@tcp(shoppingdb)/shoppingcartdb?charset=utf8")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -22,12 +22,13 @@ var items []models.Items
 
 //CheckAvailability returns true if there is an item with same ID in the DB, returns false in case there is not
 var CheckAvailability = func(id string) (bool, models.Items) {
-	db := dbConn()
+	db := DbConn()
 	defer db.Close()
 	var item models.Items
 
 	row := db.QueryRow("SELECT id FROM shoppingcartdb.items WHERE id=?;", id)
 	err := row.Scan(&item.ID, &item.Title, &item.Price, &item.Quantity)
+	fmt.Println(item)
 	if err == sql.ErrNoRows {
 		//in case there is not an item with the same ID
 		return false, item
@@ -57,7 +58,7 @@ var LogsError = func(msg string, e error) {
 }
 
 var Insert = func(query string, values models.Items, msgerror string) sql.Result {
-	db := dbConn()
+	db := DbConn()
 	defer db.Close()
 	q, err := db.Prepare(query)
 	LogsError(msgerror, err)
@@ -67,7 +68,7 @@ var Insert = func(query string, values models.Items, msgerror string) sql.Result
 }
 
 var Delete = func(query, id, msgerror string) sql.Result {
-	db := dbConn()
+	db := DbConn()
 	defer db.Close()
 	q, err := db.Prepare(query)
 	LogsError(msgerror, err)
@@ -77,7 +78,7 @@ var Delete = func(query, id, msgerror string) sql.Result {
 }
 
 var Update = func(query, id, msgerror string, qt *string) sql.Result {
-	db := dbConn()
+	db := DbConn()
 	defer db.Close()
 	q, err := db.Prepare(query)
 	LogsError(msgerror, err)
@@ -87,7 +88,7 @@ var Update = func(query, id, msgerror string, qt *string) sql.Result {
 }
 
 var SelectAll = func() []models.Items {
-	db := dbConn()
+	db := DbConn()
 	defer db.Close()
 	rows, err := db.Query("SELECT *  FROM shoppingcartdb.items")
 	LogsError("Error trying to retrieve the data from db", err)
@@ -100,4 +101,15 @@ var SelectAll = func() []models.Items {
 		items = append(items, item)
 	}
 	return items
+}
+
+func CleanDB() error {
+	db := DbConn()
+	defer db.Close()
+	_, err := db.Query("DELETE FROM shoppingcartdb.items;")
+	if err != nil {
+		LogsError("Not able to delete from items table", err)
+		return err
+	}
+	return nil
 }
