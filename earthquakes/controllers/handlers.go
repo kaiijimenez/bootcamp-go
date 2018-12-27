@@ -16,7 +16,8 @@ import (
 
 const endepoint = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&%s"
 
-var earthquakes []models.SpecificID
+var earthquakes []models.Response
+var twodaysE []models.Response
 
 func GetEarthquake(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Getting earthquake by id")
@@ -34,10 +35,11 @@ func GetEarthquake(w http.ResponseWriter, r *http.Request) {
 	body, _ := ioutil.ReadAll(endp.Body)
 	var fromID models.SpecificID
 	err := json.Unmarshal(body, &fromID)
+	res := utils.ConvertToRes(fromID)
 	if err != nil {
 		utils.RespondWithError(err, http.StatusBadRequest, "Error trying to unsmarshal data", w)
 	}
-	earthquakes = append(earthquakes, fromID)
+	earthquakes = append(earthquakes, res)
 	utils.RespondWithJson(w, http.StatusOK, earthquakes)
 }
 
@@ -58,15 +60,16 @@ func DeleteFromMemory(w http.ResponseWriter, r *http.Request) {
 func UpdateEarthquake(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Updating by id")
 	key := mux.Vars(r)["key"]
-	var response models.SpecificID
+	var fromID models.SpecificID
 	for i, v := range earthquakes {
 		if v.ID == key {
 			//deleting
 			earthquakes = append(earthquakes[:i], earthquakes[i+1:]...)
-			if err := json.NewDecoder(r.Body).Decode(&response); err != nil {
+			if err := json.NewDecoder(r.Body).Decode(&fromID); err != nil {
 				utils.RespondWithError(err, http.StatusBadRequest, "Error trying to decode the request", w)
 				return
 			}
+			response := utils.ConvertToRes(fromID)
 			earthquakes = append(earthquakes, response)
 			utils.RespondWithJson(w, http.StatusAccepted, earthquakes)
 			return
@@ -94,16 +97,26 @@ func GetFromPeriod(w http.ResponseWriter, r *http.Request) {
 		utils.RespondWithError(err, http.StatusNotImplemented, "Error trying to unmarshall the data", w)
 		return
 	}
-	utils.RespondWithJson(w, http.StatusOK, collection)
+	if collection.MetaD.Status != 200 {
+		utils.RespondWithError(nil, http.StatusNotFound, "Error trying to fetch data from endpoint", w)
+		return
+	}
+	for _, v := range collection.Features {
+		res := utils.ConvertToRes(v)
+		twodaysE = append(twodaysE, res)
+	}
+	utils.RespondWithJson(w, http.StatusOK, twodaysE)
 	return
 }
 
 func ReportEarthquake(w http.ResponseWriter, r *http.Request) {
-	var response models.SpecificID
-	if err := json.NewDecoder(r.Body).Decode(&response); err != nil {
+	fmt.Println("Reporting a new earthquake")
+	var fromID models.SpecificID
+	if err := json.NewDecoder(r.Body).Decode(&fromID); err != nil {
 		utils.RespondWithError(err, http.StatusBadRequest, "Error trying to unmarshall the data", w)
 		return
 	}
+	response := utils.ConvertToRes(fromID)
 	earthquakes = append(earthquakes, response)
 	utils.RespondWithJson(w, http.StatusCreated, earthquakes)
 	return

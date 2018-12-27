@@ -1,0 +1,14 @@
+version: "3.7"
+
+services:
+  earthquakes_image:
+    image: earthquakes_image
+    container_name: earthquakes_image
+    restart: always
+    ports:
+      - 8000:8000
+    volumes: 
+      - ./:/go/src/github.com/kaiijimenez/bootcamp-go/earthquakes
+    command: go run main.go
+    networks:
+      - default
