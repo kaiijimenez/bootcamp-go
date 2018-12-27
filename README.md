@@ -13,6 +13,14 @@ Divided:
  
 # Week 3
   - Exercises with files
+
+# restAPI
+ Shopping Cart API:
+  - Creates a new Cart inside a DB
+  - Able to add item in to the DB
+  - Get and list all products from DB
+  - Update the quantity of the products 
+  - Removes an item from DB
+  - Clear all cart from DB
+  Using docker and docker-compose
   
-# TODO
-Commit API shopping Cart EOD
