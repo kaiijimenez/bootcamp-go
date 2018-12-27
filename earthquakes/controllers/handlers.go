@@ -76,14 +76,16 @@ func UpdateEarthquake(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-//Check has some issues
 func GetFromPeriod(w http.ResponseWriter, r *http.Request) {
-	period := make(map[string]string)
+	fmt.Println("Getting from period of time")
+	//var period models.PeriodTime
+	/*period := make(map[string]string)
+	fmt.Println(r.Body)
 	if err := json.NewDecoder(r.Body).Decode(&period); err != nil {
-		utils.RespondWithError(err, http.StatusBadRequest, "Error trying to decode the request", w)
+		utils.RespondWithError(err, http.StatusBadRequest, "Error trying to decode the request ", w)
 		return
-	}
-	timePeriod := fmt.Sprintf("starttime=%s&endtime=%s", period["start"], period["end"])
+	}*/
+	timePeriod := fmt.Sprintf("starttime=%s&endtime=%s", "2018-12-19", "2018-12-20")
 	getURL := fmt.Sprintf(endepoint, timePeriod)
 	endp, _ := http.Get(getURL)
 	body, _ := ioutil.ReadAll(endp.Body)
@@ -92,7 +94,6 @@ func GetFromPeriod(w http.ResponseWriter, r *http.Request) {
 		utils.RespondWithError(err, http.StatusNotImplemented, "Error trying to unmarshall the data", w)
 		return
 	}
-	fmt.Println(collection)
 	utils.RespondWithJson(w, http.StatusOK, collection)
 	return
 }

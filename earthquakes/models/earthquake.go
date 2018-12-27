@@ -18,9 +18,9 @@ type Metadata struct {
 }
 
 type Feature struct {
-	Propertie []Properties `json:"properties, omitempty"`
-	Geo       Geometry     `json:"geometry, omitempty"`
-	ID        string       `json:"id, omitempty"`
+	Propertie Properties `json:"properties, omitempty"`
+	Geo       Geometry   `json:"geometry, omitempty"`
+	ID        string     `json:"id, omitempty"`
 }
 
 type Properties struct {
@@ -50,4 +50,9 @@ type Response struct {
 type ErrorResponse struct {
 	Code int
 	Msg  string
+}
+
+type PeriodTime struct {
+	Start string `json:"start, omitempty"`
+	End   string `json:"end, omitempty"`
 }
